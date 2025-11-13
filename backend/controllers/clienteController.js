@@ -1,0 +1,194 @@
+
+const { query } = require('../database');
+const path = require('path');
+
+// ===================================
+// ABRIR PÁGINA CRUD CLIENTE
+// ===================================
+exports.abrirCrudCliente = (req, res) => {
+  console.log('Rota abrirCrudCliente acessada');
+  res.sendFile(path.join(__dirname, '../../frontend/cliente/cliente.html'));
+};
+
+// ===================================
+// LISTAR CLIENTES
+// ===================================
+exports.listarClientes = async (req, res) => {
+  try {
+    const result = await query(`
+      SELECT 
+        c.id_pessoa,
+        p.nome_pessoa AS nome,
+        p.email_pessoa AS email,
+        p.telefone_pessoa AS telefone,
+        c.renda_cliente,
+        c.data_cadastro_cliente
+      FROM CLIENTE c
+      JOIN PESSOA p ON c.id_pessoa = p.id_pessoa
+      ORDER BY c.id_pessoa;
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Erro ao listar clientes:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+};
+
+// ===================================
+// CRIAR CLIENTE
+// ===================================
+exports.criarCliente = async (req, res) => {
+  try {
+    const {
+      id_pessoa,
+      nome_pessoa,
+      email_pessoa,
+      senha_pessoa,
+      endereco_pessoa,
+      telefone_pessoa,
+      data_nascimento,
+      renda_cliente,
+      data_cadastro_cliente
+    } = req.body;
+
+    if (!id_pessoa || !nome_pessoa || !email_pessoa || !senha_pessoa) {
+      return res.status(400).json({ error: 'Campos obrigatórios não fornecidos' });
+    }
+
+    const idInt = parseInt(id_pessoa);
+    if (isNaN(idInt)) {
+      return res.status(400).json({ error: 'id_pessoa deve ser numérico' });
+    }
+
+    // Cria pessoa
+    await query(
+      `INSERT INTO PESSOA (id_pessoa, nome_pessoa, email_pessoa, senha_pessoa, endereco_pessoa, telefone_pessoa, data_nascimento)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [idInt, nome_pessoa, email_pessoa, senha_pessoa, endereco_pessoa, telefone_pessoa, data_nascimento]
+    );
+
+    // Cria cliente
+    const result = await query(
+      `INSERT INTO CLIENTE (id_pessoa, renda_cliente, data_cadastro_cliente)
+       VALUES ($1,$2,$3) RETURNING *`,
+      [idInt, renda_cliente, data_cadastro_cliente]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Erro ao criar cliente:', error);
+    if (error.code === '23505') {
+      return res.status(400).json({ error: 'id_pessoa ou email já estão em uso' });
+    }
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+};
+
+// ===================================
+// OBTER CLIENTE POR ID
+// ===================================
+exports.obterCliente = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
+
+    const result = await query(`
+      SELECT 
+        c.id_pessoa,
+        p.nome_pessoa AS nome,
+        p.email_pessoa AS email,
+        p.senha_pessoa AS senha,
+        p.endereco_pessoa AS endereco,
+        p.telefone_pessoa AS telefone,
+        p.data_nascimento,
+        c.renda_cliente,
+        c.data_cadastro_cliente
+      FROM CLIENTE c
+      JOIN PESSOA p ON c.id_pessoa = p.id_pessoa
+      WHERE c.id_pessoa = $1
+    `, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Cliente não encontrado' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Erro ao obter cliente:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+};
+
+// ===================================
+// ATUALIZAR CLIENTE
+// ===================================
+exports.atualizarCliente = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const {
+      nome_pessoa,
+      email_pessoa,
+      senha_pessoa,
+      endereco_pessoa,
+      telefone_pessoa,
+      data_nascimento,
+      renda_cliente,
+      data_cadastro_cliente
+    } = req.body;
+
+    if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
+
+    const existing = await query(`SELECT * FROM CLIENTE WHERE id_pessoa = $1`, [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Cliente não encontrado' });
+
+    // Atualiza pessoa
+    await query(
+      `UPDATE PESSOA 
+         SET nome_pessoa=$1, email_pessoa=$2, senha_pessoa=$3,
+             endereco_pessoa=$4, telefone_pessoa=$5, data_nascimento=$6
+       WHERE id_pessoa=$7`,
+      [nome_pessoa, email_pessoa, senha_pessoa, endereco_pessoa, telefone_pessoa, data_nascimento, id]
+    );
+
+    // Atualiza cliente
+    const result = await query(
+      `UPDATE CLIENTE 
+         SET renda_cliente=$1, data_cadastro_cliente=$2
+       WHERE id_pessoa=$3 RETURNING *`,
+      [renda_cliente, data_cadastro_cliente, id]
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Erro ao atualizar cliente:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+};
+
+// ===================================
+// DELETAR CLIENTE
+// ===================================
+exports.deletarCliente = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
+
+    const existing = await query(`SELECT * FROM CLIENTE WHERE id_pessoa=$1`, [id]);
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Cliente não encontrado' });
+
+    await query(`DELETE FROM PESSOA WHERE id_pessoa=$1`, [id]);
+
+    res.status(204).send();
+  } catch (error) {
+    console.error('Erro ao deletar cliente:', error);
+
+    if (error.code === '23503') {
+      return res.status(409).json({
+        error: 'Erro de integridade referencial - o cliente possui registros dependentes.'
+      });
+    }
+
+    res.status(500).json({ error: 'Erro interno do servidor ao excluir o cliente.' });
+  }
+};
