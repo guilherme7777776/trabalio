@@ -22,7 +22,7 @@ exports.listarClientes = async (req, res) => {
         p.email_pessoa AS email,
         p.telefone_pessoa AS telefone,
         c.renda_cliente,
-        c.data_cadastro_cliente
+        c.data_cadastro
       FROM CLIENTE c
       JOIN PESSOA p ON c.id_pessoa = p.id_pessoa
       ORDER BY c.id_pessoa;
@@ -49,7 +49,7 @@ exports.criarCliente = async (req, res) => {
       telefone_pessoa,
       data_nascimento,
       renda_cliente,
-      data_cadastro_cliente
+      data_cadastro
     } = req.body;
 
     if (!id_pessoa || !nome_pessoa || !email_pessoa || !senha_pessoa) {
@@ -70,9 +70,9 @@ exports.criarCliente = async (req, res) => {
 
     // Cria cliente
     const result = await query(
-      `INSERT INTO CLIENTE (id_pessoa, renda_cliente, data_cadastro_cliente)
+      `INSERT INTO CLIENTE (id_pessoa, renda_cliente, data_cadastro)
        VALUES ($1,$2,$3) RETURNING *`,
-      [idInt, renda_cliente, data_cadastro_cliente]
+      [idInt, renda_cliente, data_cadastro]
     );
 
     res.status(201).json(result.rows[0]);
@@ -103,7 +103,7 @@ exports.obterCliente = async (req, res) => {
         p.telefone_pessoa AS telefone,
         p.data_nascimento,
         c.renda_cliente,
-        c.data_cadastro_cliente
+        c.data_cadastro
       FROM CLIENTE c
       JOIN PESSOA p ON c.id_pessoa = p.id_pessoa
       WHERE c.id_pessoa = $1
@@ -134,7 +134,7 @@ exports.atualizarCliente = async (req, res) => {
       telefone_pessoa,
       data_nascimento,
       renda_cliente,
-      data_cadastro_cliente
+      data_cadastro
     } = req.body;
 
     if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
@@ -154,9 +154,9 @@ exports.atualizarCliente = async (req, res) => {
     // Atualiza cliente
     const result = await query(
       `UPDATE CLIENTE 
-         SET renda_cliente=$1, data_cadastro_cliente=$2
+         SET renda_cliente=$1, data_cadastro=$2
        WHERE id_pessoa=$3 RETURNING *`,
-      [renda_cliente, data_cadastro_cliente, id]
+      [renda_cliente, data_cadastro, id]
     );
 
     res.json(result.rows[0]);

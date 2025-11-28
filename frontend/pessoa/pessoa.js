@@ -69,7 +69,7 @@ function limparFormulario() {
 
     document.getElementById('checkboxCliente').checked = false;
     document.getElementById('renda_cliente').value = '';
-    document.getElementById('data_cadastro_cliente').value = '';
+    document.getElementById('data_cadastro').value = '';
 
 }
 
@@ -129,8 +129,11 @@ async function funcaoEhFuncionario(pessoaId) {
                 ehFuncionario: true,
                 salario_funcionario: funcionarioData.salario_funcionario,
                 cargo_id_cargo: funcionarioData.cargo_id_cargo,
-                porcentagem_comissao_funcionario: funcionarioData.porcentagem_comissao_funcionario
+                porcentagem_comissao_funcionario: funcionarioData.comissao,
+                carga_horaria: funcionarioData.carga_horaria,
+                
             };
+            
         }
 
         if (!response.ok) {
@@ -159,7 +162,7 @@ async function funcaoEhCliente(pessoaId) {
             return {
                 ehCliente: true,
                 renda_cliente: clienteData.renda_cliente,
-                data_cadastro_cliente: clienteData.data_cadastro_cliente
+                data_cadastro: clienteData.data_cadastro
             };
         }
 
@@ -239,6 +242,7 @@ async function preencherFormulario(pessoa) {
 
     // Verifica se a pessoa é funcionario
     const ehFuncionarioEssaPessoa = await funcaoEhFuncionario(currentPersonId);
+   
 
   //  console.log('Resultado função é funcionario:', ehFuncionarioEssaPessoa);
 
@@ -247,7 +251,9 @@ async function preencherFormulario(pessoa) {
         document.getElementById('checkboxFuncionario').checked = true;
         document.getElementById('cargo_id_cargo').value = ehFuncionarioEssaPessoa.cargo_id_cargo;
         document.getElementById('salario_funcionario').value = ehFuncionarioEssaPessoa.salario_funcionario;
-        document.getElementById('porcentagem_comissao_funcionario').value = ehFuncionarioEssaPessoa.porcentagem_comissao_funcionario;
+        document.getElementById('porcentagem_comissao_funcionario').value = ehFuncionarioEssaPessoa.porcentagem_comissao_funcionario
+        document.getElementById('carga_horaria').value = ehFuncionarioEssaPessoa.carga_horaria;
+        
 
     } else {
         // Não é funcionario
@@ -255,6 +261,7 @@ async function preencherFormulario(pessoa) {
         document.getElementById('cargo_id_cargo').value = '';
         document.getElementById('salario_funcionario').value = '';
         document.getElementById('porcentagem_comissao_funcionario').value = '';
+        document.getElementById('carga_horaria').value = '';
     }
 
     //Verifica se a pessoa é cliente
@@ -264,13 +271,13 @@ async function preencherFormulario(pessoa) {
         // alert('É cliente: ' + oCliente.ehCliente + ' - ' + oCliente.renda + ' - ' + oCliente.data_cadastro);
         document.getElementById('checkboxCliente').checked = true;
         document.getElementById('renda_cliente').value = ehClienteEssaPessoa.renda_cliente;
-        document.getElementById('data_cadastro_cliente').value = converterDataParaFormatoYYYYMMDD(ehClienteEssaPessoa.data_cadastro_cliente);
+        document.getElementById('data_cadastro').value = converterDataParaFormatoYYYYMMDD(ehClienteEssaPessoa.data_cadastro);
 
     } else {
         // Não é cliente
         document.getElementById('checkboxCliente').checked = false;
         document.getElementById('renda_cliente').value = '';
-        document.getElementById('data_cadastro_cliente').value = '';
+        document.getElementById('data_cadastro').value = '';
     }
 }
 
@@ -331,6 +338,7 @@ async function salvarOperacao() {
             pessoa_id_pessoa: pessoa.id_pessoa,
             salario_funcionario: document.getElementById('salario_funcionario').value,
             cargo_id_cargo: parseInt(document.getElementById('cargo_id_cargo').value),
+            carga_horaria: parseInt(document.getElementById('carga_horaria').value),
             porcentagem_comissao_funcionario: document.getElementById('porcentagem_comissao_funcionario').value
         };
     }
@@ -342,7 +350,7 @@ async function salvarOperacao() {
         cliente = {
             pessoa_id_pessoa: pessoa.id_pessoa,
             renda_cliente: document.getElementById('renda_cliente').value,
-            data_cadastro_cliente: document.getElementById('data_cadastro_cliente').value || null
+            data_cadastro: document.getElementById('data_cadastro').value || null
         };
     }
     const caminhoCliente = `${API_BASE_URL}/cliente/${currentPersonId}`;
@@ -415,14 +423,19 @@ async function salvarOperacao() {
                 if (document.getElementById('checkboxCliente').checked) {
                     // cliente deve existir: verificar se existe
                     const respVerifCli = await fetch(caminhoCliente);
+                    //const caminhoCliente2 = `${API_BASE_URL}/cliente/2`;
+                    //const respVerifCli2 = await fetch(caminhoCliente2);
+                    //console.log(`seq`,respVerifCli2)
+                    
                     if (respVerifCli.status === 404) {
                         // não existe, criar
-                        const respCriarCli = await fetch(`${API_BASE_URL}/cliente/`, {
+                        const respCriarCli = await fetch(`${API_BASE_URL}/cliente`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(cliente)
+                                body: JSON.stringify(cliente)
                         });
-                        if (!respCriarCli.ok) console.warn('Erro ao criar cliente no alterar', respCriarCli.status);
+                        console.log(respCriarCli)
+                        if (!respCriarCli.ok) console.warn('Erro ao criar cliente no criar', respCriarCli.status);
                     } else if (respVerifCli.status === 200) {
                         // já existe, alterar
                         const respAlterarCli = await fetch(caminhoCliente, {

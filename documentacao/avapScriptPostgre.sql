@@ -146,7 +146,7 @@ INSERT INTO CARGO (nome_cargo) VALUES
 ('Caixa');
 
 -- FUNCIONARIO
-INSERT INTO FUNCIONARIO (id_pessoa, salario, carga_horaria, id_cargo) VALUES
+INSERT INTO FUNCIONARIO (id_pessoa, salario_funcionario, carga_horaria, id_cargo) VALUES
 (1, 3000.00, 44.0, 1),
 (2, 4000.00, 40.0, 2),
 (3, 2500.00, 36.0, 1),

@@ -5,12 +5,12 @@ const dbConfig = {
   host: 'localhost',
   port: 5432, // Porta padrão do PostgreSQL
    user: 'postgres', // Usuário padrão do PostgreSQL (ajuste conforme necessário)
-   password: 'postgres',
+   password: 'kikoloureiro',
   
   //user: 'postgres', // Usuário padrão do PostgreSQL (ajuste conforme necessário)
   //password: 'postgres',
 
-  database: 'postgres',
+  database: 'avaps',
   // Configurações específicas do PostgreSQL
   ssl: false, // Defina como true se usar SSL
   idleTimeoutMillis: 30000, // Timeout para conexões ociosas

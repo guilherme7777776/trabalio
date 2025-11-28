@@ -5,11 +5,9 @@ const path = require('path');
 exports.abrirCrudPessoa = (req, res) => {
   const usuario = req.cookies.usuarioLogado; // Cookie com usuário logado
 
-  if (usuario) {
-    res.sendFile(path.join(__dirname, '../../frontend/pessoa/pessoa.html'));
-  } else {
-    res.redirect('/login'); // Redireciona se não estiver logado
-  }
+
+  res.sendFile(path.join(__dirname, '../../frontend/pessoa/pessoa.html'));
+ 
 };
 
 // Listar todas as pessoas

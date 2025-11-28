@@ -24,6 +24,7 @@ exports.listarFuncionarios = async (req, res) => {
         p.telefone_pessoa,
         f.salario_funcionario,
         f.carga_horaria,
+        f.comissao,
         f.id_cargo,
         c.nome_cargo
       FROM FUNCIONARIO f
@@ -54,10 +55,11 @@ exports.criarFuncionario = async (req, res) => {
       data_nascimento,
       funcionario,
       carga_horaria,
+      comissao,
       id_cargo
     } = req.body;
 
-    if (!id_pessoa || !nome_pessoa || !email_pessoa || !senha_pessoa || !funcionario || !carga_horaria) {
+    if (!id_pessoa || !nome_pessoa || !email_pessoa || !senha_pessoa || !funcionario || !carga_horaria || !comissao) {
       return res.status(400).json({ error: 'Campos obrigatórios não fornecidos' });
     }
 
@@ -75,9 +77,9 @@ exports.criarFuncionario = async (req, res) => {
 
     // Cria funcionário
     const result = await query(
-      `INSERT INTO FUNCIONARIO (id_pessoa, funcionario, carga_horaria, id_cargo)
+      `INSERT INTO FUNCIONARIO (id_pessoa, funcionario, carga_horaria, comissao, id_cargo)
        VALUES ($1,$2,$3,$4) RETURNING *`,
-      [idInt, funcionario, carga_horaria, id_cargo || null]
+      [idInt, funcionario, carga_horaria, comissao, id_cargo || null]
     );
 
     res.status(201).json(result.rows[0]);
@@ -108,11 +110,13 @@ exports.obterFuncionario = async (req, res) => {
         p.data_nascimento,
         f.salario_funcionario,
         f.carga_horaria,
+        f.comissao,
         f.id_cargo
       FROM FUNCIONARIO f
       JOIN PESSOA p ON f.id_pessoa = p.id_pessoa
       WHERE f.id_pessoa = $1
     `, [id]);
+  
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Funcionário não encontrado' });
@@ -140,6 +144,7 @@ exports.atualizarFuncionario = async (req, res) => {
       data_nascimento,
       funcionario,
       carga_horaria,
+      comissao,
       id_cargo
     } = req.body;
 
@@ -160,9 +165,9 @@ exports.atualizarFuncionario = async (req, res) => {
     // Atualiza funcionário
     const result = await query(
       `UPDATE FUNCIONARIO 
-         SET funcionario=$1, carga_horaria=$2, id_cargo=$3
+         SET funcionario=$1, carga_horaria=$2, comissao=$3 id_cargo=$4
        WHERE id_pessoa=$4 RETURNING *`,
-      [funcionario, carga_horaria, id_cargo, id]
+      [funcionario, carga_horaria, comissao, id_cargo, id]
     );
 
     res.json(result.rows[0]);
