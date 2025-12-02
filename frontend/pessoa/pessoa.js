@@ -24,6 +24,8 @@ const messageContainer = document.getElementById('messageContainer');
 document.addEventListener('DOMContentLoaded', () => {
     carregarPessoas();
 });
+// Carrega assim que a página abrir
+window.addEventListener('DOMContentLoaded', carregarCargos)
 
 // Event Listeners
 btnBuscar.addEventListener('click', buscarPessoa);
@@ -335,11 +337,11 @@ async function salvarOperacao() {
     let funcionario = null;
     if (document.getElementById('checkboxFuncionario').checked) {
         funcionario = {
-            pessoa_id_pessoa: pessoa.id_pessoa,
+            id_pessoa: pessoa.id_pessoa,
             salario_funcionario: document.getElementById('salario_funcionario').value,
-            cargo_id_cargo: parseInt(document.getElementById('cargo_id_cargo').value),
             carga_horaria: parseInt(document.getElementById('carga_horaria').value),
-            porcentagem_comissao_funcionario: document.getElementById('porcentagem_comissao_funcionario').value
+            comissao: document.getElementById('porcentagem_comissao_funcionario').value,
+            id_cargo: parseInt(document.getElementById('cargo_id_cargo').value)
         };
     }
     const caminhoFunc = `${API_BASE_URL}/funcionario/${currentPersonId}`;
@@ -348,7 +350,7 @@ async function salvarOperacao() {
     let cliente = null;
     if (document.getElementById('checkboxCliente').checked) {
         cliente = {
-            pessoa_id_pessoa: pessoa.id_pessoa,
+            id_pessoa: pessoa.id_pessoa,
             renda_cliente: document.getElementById('renda_cliente').value,
             data_cadastro: document.getElementById('data_cadastro').value || null
         };
@@ -432,9 +434,10 @@ async function salvarOperacao() {
                         const respCriarCli = await fetch(`${API_BASE_URL}/cliente`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(cliente)
+                            body: JSON.stringify(cliente)
                         });
-                        console.log(respCriarCli)
+                        console.log(JSON.stringify(cliente));
+                        console.log(cliente);
                         if (!respCriarCli.ok) console.warn('Erro ao criar cliente no criar', respCriarCli.status);
                     } else if (respVerifCli.status === 200) {
                         // já existe, alterar
@@ -538,7 +541,7 @@ async function salvarOperacao() {
 
               //  console.log('Fim alterar pessoa - currentPersonId: ' + currentPersonId);
 
-
+              
                 mostrarMensagem('Pessoa alterada com sucesso!', 'success');
                 limparFormulario();
                 carregarPessoas();
@@ -641,3 +644,27 @@ async function selecionarPessoa(id) {
     searchId.value = id;
     await buscarPessoa();
 }
+
+async function carregarCargos() {
+    try {
+        const resp = await fetch(`${API_BASE_URL}/cargo`);
+        const cargos = await resp.json();
+        console.log(cargos)
+
+        const selectCargo = document.getElementById("cargo_id_cargo");
+
+        // limpa antes de preencher
+        selectCargo.innerHTML = '<option value="">Cargo</option>';
+
+        cargos.forEach(c => {
+            const option = document.createElement("option");
+            option.value = c.id_cargo;
+            option.textContent = c.nome_cargo;
+            selectCargo.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error("Erro ao carregar cargos:", error);
+    }
+}
+

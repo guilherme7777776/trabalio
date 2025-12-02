@@ -1,4 +1,3 @@
-
 const { query } = require('../database');
 const path = require('path');
 
@@ -36,24 +35,14 @@ exports.listarClientes = async (req, res) => {
 };
 
 // ===================================
-// CRIAR CLIENTE
+// CRIAR CLIENTE (versão correta)
 // ===================================
 exports.criarCliente = async (req, res) => {
   try {
-    const {
-      id_pessoa,
-      nome_pessoa,
-      email_pessoa,
-      senha_pessoa,
-      endereco_pessoa,
-      telefone_pessoa,
-      data_nascimento,
-      renda_cliente,
-      data_cadastro
-    } = req.body;
+    const { id_pessoa, renda_cliente, data_cadastro } = req.body;
 
-    if (!id_pessoa || !nome_pessoa || !email_pessoa || !senha_pessoa) {
-      return res.status(400).json({ error: 'Campos obrigatórios não fornecidos' });
+    if (!id_pessoa) {
+      return res.status(400).json({ error: 'id_pessoa é obrigatório' });
     }
 
     const idInt = parseInt(id_pessoa);
@@ -61,12 +50,17 @@ exports.criarCliente = async (req, res) => {
       return res.status(400).json({ error: 'id_pessoa deve ser numérico' });
     }
 
-    // Cria pessoa
-    await query(
-      `INSERT INTO PESSOA (id_pessoa, nome_pessoa, email_pessoa, senha_pessoa, endereco_pessoa, telefone_pessoa, data_nascimento)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [idInt, nome_pessoa, email_pessoa, senha_pessoa, endereco_pessoa, telefone_pessoa, data_nascimento]
+    // Verifica se pessoa existe
+    const pessoa = await query(
+      `SELECT * FROM PESSOA WHERE id_pessoa = $1`,
+      [idInt]
     );
+
+    if (pessoa.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Pessoa não encontrada. Crie a pessoa antes de criar o cliente.'
+      });
+    }
 
     // Cria cliente
     const result = await query(
@@ -75,13 +69,16 @@ exports.criarCliente = async (req, res) => {
       [idInt, renda_cliente, data_cadastro]
     );
 
-    res.status(201).json(result.rows[0]);
+    return res.status(201).json(result.rows[0]);
+
   } catch (error) {
     console.error('Erro ao criar cliente:', error);
+
     if (error.code === '23505') {
-      return res.status(400).json({ error: 'id_pessoa ou email já estão em uso' });
+      return res.status(400).json({ error: 'Esta pessoa já é cliente.' });
     }
-    res.status(500).json({ error: 'Erro interno do servidor' });
+
+    return res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
 
@@ -121,37 +118,20 @@ exports.obterCliente = async (req, res) => {
 };
 
 // ===================================
-// ATUALIZAR CLIENTE
+// ATUALIZAR CLIENTE (Agora só CLIENTE, não PESSOA)
 // ===================================
 exports.atualizarCliente = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const {
-      nome_pessoa,
-      email_pessoa,
-      senha_pessoa,
-      endereco_pessoa,
-      telefone_pessoa,
-      data_nascimento,
-      renda_cliente,
-      data_cadastro
-    } = req.body;
+    const { renda_cliente, data_cadastro } = req.body;
 
     if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
 
     const existing = await query(`SELECT * FROM CLIENTE WHERE id_pessoa = $1`, [id]);
-    if (existing.rows.length === 0) return res.status(404).json({ error: 'Cliente não encontrado' });
+    if (existing.rows.length === 0)
+      return res.status(404).json({ error: 'Cliente não encontrado' });
 
-    // Atualiza pessoa
-    await query(
-      `UPDATE PESSOA 
-         SET nome_pessoa=$1, email_pessoa=$2, senha_pessoa=$3,
-             endereco_pessoa=$4, telefone_pessoa=$5, data_nascimento=$6
-       WHERE id_pessoa=$7`,
-      [nome_pessoa, email_pessoa, senha_pessoa, endereco_pessoa, telefone_pessoa, data_nascimento, id]
-    );
-
-    // Atualiza cliente
+    // Atualiza somente CLIENTE
     const result = await query(
       `UPDATE CLIENTE 
          SET renda_cliente=$1, data_cadastro=$2
@@ -167,7 +147,7 @@ exports.atualizarCliente = async (req, res) => {
 };
 
 // ===================================
-// DELETAR CLIENTE
+// DELETAR CLIENTE (agora só cliente)
 // ===================================
 exports.deletarCliente = async (req, res) => {
   try {
@@ -175,9 +155,11 @@ exports.deletarCliente = async (req, res) => {
     if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
 
     const existing = await query(`SELECT * FROM CLIENTE WHERE id_pessoa=$1`, [id]);
-    if (existing.rows.length === 0) return res.status(404).json({ error: 'Cliente não encontrado' });
+    if (existing.rows.length === 0)
+      return res.status(404).json({ error: 'Cliente não encontrado' });
 
-    await query(`DELETE FROM PESSOA WHERE id_pessoa=$1`, [id]);
+    // Apaga somente o cliente
+    await query(`DELETE FROM CLIENTE WHERE id_pessoa=$1`, [id]);
 
     res.status(204).send();
   } catch (error) {

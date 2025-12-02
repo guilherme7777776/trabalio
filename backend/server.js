@@ -81,6 +81,9 @@ app.use('/pessoa', pessoaRoutes);
 const clienteRoutes = require('./routes/clienteRoutes');
 app.use('/cliente', clienteRoutes);
 
+const cargoRoutes = require('./routes/cargoRoutes');
+app.use('/cargo', cargoRoutes);
+
 const funcionarioRoutes = require('./routes/funcionarioRoutes');
 app.use('/funcionario', funcionarioRoutes);
 
